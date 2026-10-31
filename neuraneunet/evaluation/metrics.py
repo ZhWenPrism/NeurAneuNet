@@ -91,6 +91,10 @@ def percentile_hausdorff(
         raise ValueError("both surfaces must contain points")
     if not 0 <= percentile <= 100:
         raise ValueError("percentile must be between 0 and 100")
+    for surface in (surface_a, surface_b):
+        for point in surface:
+            if len(point) != 3 or any(not isfinite(value) for value in point):
+                raise ValueError("surface points must contain three finite coordinates")
     values = sorted(
         _directed_distances(surface_a, surface_b) + _directed_distances(surface_b, surface_a)
     )
