@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 from math import isfinite
+from numbers import Integral
 from types import MappingProxyType
 from typing import Mapping
 
@@ -30,8 +31,11 @@ class VolumeSpec:
     orientation: str
 
     def __post_init__(self) -> None:
-        if len(self.shape_zyx) != 3 or any(size <= 0 for size in self.shape_zyx):
-            raise ValueError("shape_zyx must contain three positive dimensions")
+        if len(self.shape_zyx) != 3 or any(
+            isinstance(size, bool) or not isinstance(size, Integral) or size <= 0
+            for size in self.shape_zyx
+        ):
+            raise ValueError("shape_zyx must contain three positive integer dimensions")
         if len(self.spacing_mm_zyx) != 3:
             raise ValueError("spacing_mm_zyx must contain three values")
         for axis, spacing in zip("zyx", self.spacing_mm_zyx):
