@@ -87,7 +87,7 @@ def percentile_hausdorff(
 ) -> float:
     """Symmetric percentile Hausdorff distance for physical-space surface points."""
 
-    if not surface_a or not surface_b:
+    if len(surface_a) == 0 or len(surface_b) == 0:
         raise ValueError("both surfaces must contain points")
     if not 0 <= percentile <= 100:
         raise ValueError("percentile must be between 0 and 100")
