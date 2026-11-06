@@ -19,7 +19,7 @@ def _validate_centerline(points: Sequence[Point3D]) -> None:
         raise ValueError("a centerline requires at least two points")
     for point in points:
         _validate_point(point)
-    if all(left == right for left, right in zip(points, points[1:])):
+    if all(all(a == b for a, b in zip(left, right)) for left, right in zip(points, points[1:])):
         raise ValueError("centerline must contain a non-zero segment")
 
 
