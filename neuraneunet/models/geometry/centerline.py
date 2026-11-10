@@ -9,34 +9,40 @@ from typing import Sequence
 Point3D = tuple[float, float, float]
 
 
-def _validate_point(point: Point3D) -> None:
+def _point(point: Point3D) -> Point3D:
     if len(point) != 3 or any(not isfinite(value) for value in point):
         raise ValueError("points must contain three finite coordinates")
+    x, y, z = point
+    return float(x), float(y), float(z)
 
 
-def _validate_centerline(points: Sequence[Point3D]) -> None:
+def _centerline(points: Sequence[Point3D]) -> tuple[Point3D, ...]:
     if len(points) < 2:
         raise ValueError("a centerline requires at least two points")
-    for point in points:
-        _validate_point(point)
-    if all(left == right for left, right in zip(points, points[1:])):
+    converted = tuple(_point(point) for point in points)
+    if all(left == right for left, right in zip(converted, converted[1:])):
         raise ValueError("centerline must contain a non-zero segment")
+    return converted
 
 
 def _distance(left: Point3D, right: Point3D) -> float:
     return sqrt(sum((a - b) ** 2 for a, b in zip(left, right)))
 
 
-def cumulative_arc_length(points: Sequence[Point3D]) -> tuple[float, ...]:
-    _validate_centerline(points)
+def _arc_lengths(points: Sequence[Point3D]) -> tuple[float, ...]:
     result = [0.0]
     for left, right in zip(points, points[1:]):
         result.append(result[-1] + _distance(left, right))
     return tuple(result)
 
 
+def cumulative_arc_length(points: Sequence[Point3D]) -> tuple[float, ...]:
+    return _arc_lengths(_centerline(points))
+
+
 def interpolate_along_centerline(points: Sequence[Point3D], arc_length_mm: float) -> Point3D:
-    distances = cumulative_arc_length(points)
+    points = _centerline(points)
+    distances = _arc_lengths(points)
     if not isfinite(arc_length_mm) or not 0 <= arc_length_mm <= distances[-1]:
         raise ValueError("arc_length_mm must lie on the centerline")
     for index, (start, end) in enumerate(zip(distances, distances[1:])):
@@ -59,8 +65,9 @@ class Projection:
 
 
 def project_to_centerline(point: Point3D, centerline: Sequence[Point3D]) -> Projection:
-    _validate_point(point)
-    distances = cumulative_arc_length(centerline)
+    point = _point(point)
+    centerline = _centerline(centerline)
+    distances = _arc_lengths(centerline)
     best: Projection | None = None
     for index, (start, end) in enumerate(zip(centerline, centerline[1:])):
         vector = tuple(right - left for left, right in zip(start, end))

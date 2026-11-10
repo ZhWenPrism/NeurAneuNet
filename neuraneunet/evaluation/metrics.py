@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import isfinite, sqrt
+from math import dist, isfinite, sqrt
 from typing import Iterable, Sequence
 
 
@@ -15,7 +15,7 @@ def _paired_finite(
         raise ValueError("inputs must be non-empty and have equal length")
     if any(not isfinite(value) for value in (*left, *right)):
         raise ValueError("inputs must contain finite values")
-    return left, right
+    return tuple(map(float, left)), tuple(map(float, right))
 
 
 def mean_absolute_error(y_true: Iterable[float], y_pred: Iterable[float]) -> float:
@@ -58,6 +58,8 @@ def binary_metrics(reference: Iterable[bool | int], prediction: Iterable[bool | 
     left, right = tuple(reference), tuple(prediction)
     if not left or len(left) != len(right):
         raise ValueError("labels must be non-empty and have equal length")
+    if any(value not in (0, 1) for values in (left, right) for value in values):
+        raise ValueError("labels must contain binary values (0 or 1)")
     pairs = [(bool(actual), bool(predicted)) for actual, predicted in zip(left, right)]
     tp = sum(actual and predicted for actual, predicted in pairs)
     tn = sum(not actual and not predicted for actual, predicted in pairs)
@@ -72,12 +74,8 @@ def binary_metrics(reference: Iterable[bool | int], prediction: Iterable[bool | 
 Point3D = tuple[float, float, float]
 
 
-def _distance(left: Point3D, right: Point3D) -> float:
-    return sqrt(sum((a - b) ** 2 for a, b in zip(left, right)))
-
-
 def _directed_distances(source: Sequence[Point3D], target: Sequence[Point3D]) -> list[float]:
-    return [min(_distance(point, candidate) for candidate in target) for point in source]
+    return [min(dist(point, candidate) for candidate in target) for point in source]
 
 
 def percentile_hausdorff(
