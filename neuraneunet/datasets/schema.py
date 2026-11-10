@@ -31,6 +31,8 @@ class VolumeSpec:
     orientation: str
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "shape_zyx", tuple(self.shape_zyx))
+        object.__setattr__(self, "spacing_mm_zyx", tuple(self.spacing_mm_zyx))
         if len(self.shape_zyx) != 3 or any(
             isinstance(size, bool) or not isinstance(size, Integral) or size <= 0
             for size in self.shape_zyx
