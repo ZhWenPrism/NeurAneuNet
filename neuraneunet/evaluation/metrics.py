@@ -58,6 +58,8 @@ def binary_metrics(reference: Iterable[bool | int], prediction: Iterable[bool | 
     left, right = tuple(reference), tuple(prediction)
     if not left or len(left) != len(right):
         raise ValueError("labels must be non-empty and have equal length")
+    if any(value not in (0, 1) for values in (left, right) for value in values):
+        raise ValueError("labels must contain binary values (0 or 1)")
     pairs = [(bool(actual), bool(predicted)) for actual, predicted in zip(left, right)]
     tp = sum(actual and predicted for actual, predicted in pairs)
     tn = sum(not actual and not predicted for actual, predicted in pairs)
