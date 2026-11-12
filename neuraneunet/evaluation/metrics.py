@@ -35,10 +35,20 @@ def mean_signed_error(y_true: Iterable[float], y_pred: Iterable[float]) -> float
     return sum(predicted - actual for actual, predicted in zip(left, right)) / len(left)
 
 
+def _paired_binary(
+    reference: Iterable[bool | int], prediction: Iterable[bool | int], name: str
+) -> tuple[tuple[bool | int, ...], tuple[bool | int, ...]]:
+    left, right = tuple(reference), tuple(prediction)
+    if not left or len(left) != len(right):
+        raise ValueError(f"{name} must be non-empty and have equal length")
+    if any(value not in (0, 1) for values in (left, right) for value in values):
+        raise ValueError(f"{name} must contain binary values (0 or 1)")
+    return left, right
+
+
 def dice_score(reference: Iterable[bool | int], prediction: Iterable[bool | int]) -> float:
-    reference_values, prediction_values = tuple(reference), tuple(prediction)
-    if not reference_values or len(reference_values) != len(prediction_values):
-        raise ValueError("masks must be non-empty and have equal length")
+    """Dice overlap for binary masks."""
+    reference_values, prediction_values = _paired_binary(reference, prediction, "masks")
     reference_set = {index for index, value in enumerate(reference_values) if bool(value)}
     prediction_set = {index for index, value in enumerate(prediction_values) if bool(value)}
     if not reference_set and not prediction_set:
@@ -55,11 +65,7 @@ class BinaryMetrics:
 
 
 def binary_metrics(reference: Iterable[bool | int], prediction: Iterable[bool | int]) -> BinaryMetrics:
-    left, right = tuple(reference), tuple(prediction)
-    if not left or len(left) != len(right):
-        raise ValueError("labels must be non-empty and have equal length")
-    if any(value not in (0, 1) for values in (left, right) for value in values):
-        raise ValueError("labels must contain binary values (0 or 1)")
+    left, right = _paired_binary(reference, prediction, "labels")
     pairs = [(bool(actual), bool(predicted)) for actual, predicted in zip(left, right)]
     tp = sum(actual and predicted for actual, predicted in pairs)
     tn = sum(not actual and not predicted for actual, predicted in pairs)
