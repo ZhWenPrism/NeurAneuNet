@@ -65,9 +65,11 @@ class Projection:
 
 
 def project_to_centerline(point: Point3D, centerline: Sequence[Point3D]) -> Projection:
-    point = _point(point)
     centerline = _centerline(centerline)
-    distances = _arc_lengths(centerline)
+    return _project(_point(point), centerline, _arc_lengths(centerline))
+
+
+def _project(point: Point3D, centerline: Sequence[Point3D], distances: Sequence[float]) -> Projection:
     best: Projection | None = None
     for index, (start, end) in enumerate(zip(centerline, centerline[1:])):
         vector = tuple(right - left for left, right in zip(start, end))
@@ -97,6 +99,8 @@ def landing_zone_offset(
 ) -> float:
     """Absolute along-centerline offset between two landing-zone points."""
 
-    reference_projection = project_to_centerline(reference, centerline)
-    prediction_projection = project_to_centerline(prediction, centerline)
+    centerline = _centerline(centerline)
+    distances = _arc_lengths(centerline)
+    reference_projection = _project(_point(reference), centerline, distances)
+    prediction_projection = _project(_point(prediction), centerline, distances)
     return abs(reference_projection.arc_length_mm - prediction_projection.arc_length_mm)
