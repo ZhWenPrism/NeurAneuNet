@@ -83,6 +83,11 @@ class CaseRecord:
     def __post_init__(self) -> None:
         if not self.case_id.strip() or any(ch.isspace() for ch in self.case_id):
             raise ValueError("case_id must be a non-empty token")
+        try:
+            split = SplitRole(self.split)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("split must be train, validation, test, or independent_clinical") from exc
+        object.__setattr__(self, "split", split)
         clean: dict[str, float | None] = {}
         for name, value in self.clinical_features.items():
             if not name.strip():
