@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import dist, isfinite, sqrt
+from math import dist, inf, isfinite, sqrt
 from typing import Iterable, Sequence
 
 
@@ -80,8 +80,19 @@ def binary_metrics(reference: Iterable[bool | int], prediction: Iterable[bool | 
 Point3D = tuple[float, float, float]
 
 
-def _directed_distances(source: Sequence[Point3D], target: Sequence[Point3D]) -> list[float]:
-    return [min(dist(point, candidate) for candidate in target) for point in source]
+def _nearest_distances(surface_a: Sequence[Point3D], surface_b: Sequence[Point3D]) -> list[float]:
+    nearest_a = []
+    nearest_b = [inf] * len(surface_b)
+    for point in surface_a:
+        nearest = inf
+        for index, candidate in enumerate(surface_b):
+            separation = dist(point, candidate)
+            if separation < nearest:
+                nearest = separation
+            if separation < nearest_b[index]:
+                nearest_b[index] = separation
+        nearest_a.append(nearest)
+    return nearest_a + nearest_b
 
 
 def percentile_hausdorff(
@@ -99,9 +110,7 @@ def percentile_hausdorff(
         for point in surface:
             if len(point) != 3 or any(not isfinite(value) for value in point):
                 raise ValueError("surface points must contain three finite coordinates")
-    values = sorted(
-        _directed_distances(surface_a, surface_b) + _directed_distances(surface_b, surface_a)
-    )
+    values = sorted(_nearest_distances(surface_a, surface_b))
     rank = (len(values) - 1) * percentile / 100
     lower = int(rank)
     upper = min(lower + 1, len(values) - 1)
