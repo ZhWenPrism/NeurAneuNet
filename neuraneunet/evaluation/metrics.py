@@ -46,14 +46,27 @@ def _paired_binary(
     return left, right
 
 
+def _binary_counts(reference, prediction) -> tuple[int, int, int, int]:
+    tp = tn = fp = fn = 0
+    for actual, predicted in zip(reference, prediction):
+        if actual:
+            if predicted:
+                tp += 1
+            else:
+                fn += 1
+        elif predicted:
+            fp += 1
+        else:
+            tn += 1
+    return tp, tn, fp, fn
+
+
 def dice_score(reference: Iterable[bool | int], prediction: Iterable[bool | int]) -> float:
     """Dice overlap for binary masks."""
-    reference_values, prediction_values = _paired_binary(reference, prediction, "masks")
-    reference_set = {index for index, value in enumerate(reference_values) if bool(value)}
-    prediction_set = {index for index, value in enumerate(prediction_values) if bool(value)}
-    if not reference_set and not prediction_set:
-        return 1.0
-    return 2 * len(reference_set & prediction_set) / (len(reference_set) + len(prediction_set))
+    left, right = _paired_binary(reference, prediction, "masks")
+    tp, _, fp, fn = _binary_counts(left, right)
+    denominator = 2 * tp + fp + fn
+    return 2 * tp / denominator if denominator else 1.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,15 +79,11 @@ class BinaryMetrics:
 
 def binary_metrics(reference: Iterable[bool | int], prediction: Iterable[bool | int]) -> BinaryMetrics:
     left, right = _paired_binary(reference, prediction, "labels")
-    pairs = [(bool(actual), bool(predicted)) for actual, predicted in zip(left, right)]
-    tp = sum(actual and predicted for actual, predicted in pairs)
-    tn = sum(not actual and not predicted for actual, predicted in pairs)
-    fp = sum(not actual and predicted for actual, predicted in pairs)
-    fn = sum(actual and not predicted for actual, predicted in pairs)
+    tp, tn, fp, fn = _binary_counts(left, right)
     sensitivity = tp / (tp + fn) if tp + fn else 0.0
     specificity = tn / (tn + fp) if tn + fp else 0.0
     precision = tp / (tp + fp) if tp + fp else 0.0
-    return BinaryMetrics(sensitivity, specificity, precision, (tp + tn) / len(pairs))
+    return BinaryMetrics(sensitivity, specificity, precision, (tp + tn) / len(left))
 
 
 Point3D = tuple[float, float, float]
