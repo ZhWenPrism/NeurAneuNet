@@ -47,7 +47,7 @@ class VolumeSpec:
 
     @property
     def voxel_volume_mm3(self) -> float:
-        z, y, x = self.spacing_mm_zyx
+        z, y, x = map(float, self.spacing_mm_zyx)
         return z * y * x
 
 
