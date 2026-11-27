@@ -113,6 +113,7 @@ def percentile_hausdorff(
 
     if len(surface_a) == 0 or len(surface_b) == 0:
         raise ValueError("both surfaces must contain points")
+    percentile = float(percentile)
     if not 0 <= percentile <= 100:
         raise ValueError("percentile must be between 0 and 100")
     for surface in (surface_a, surface_b):
